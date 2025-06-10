@@ -3,7 +3,6 @@ import { CtvOrderService } from './ctv-order.service';
 import { CreateCtvOrderDto } from './dto/create_ctv_order.dto';
 import { ApiBody, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { GetCtvOrderDto } from './dto/get_ctv_order.dto';
-import { Update } from '@remix-run/router/dist/history';
 import { UpdateCtvOrderDto } from './dto/update_ctv_order.dto';
 
 @Controller('ctv-order')
