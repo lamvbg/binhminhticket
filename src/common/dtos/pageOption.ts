@@ -1,16 +1,16 @@
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { Order } from '../enum/enum';
+import { OrderSort } from '../enum/enum';
 
 export class PageOptionsDto {
   @IsString()
   search?: string = '';
 
-  @IsEnum(Order)
+  @IsEnum(OrderSort)
   @IsOptional()
-  order?: Order = Order.DESC;
+  OrderSort?: OrderSort = OrderSort.DESC;
 
-  orderBy?: string = 'id';
+  OrderSortBy?: string = 'id';
 
   @Type(() => Number)
   @IsInt()

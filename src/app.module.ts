@@ -6,12 +6,13 @@ import { ConfigModule } from '@nestjs/config';
 import { DbModule } from './common/db/db.module';
 import { TourModule } from './modules/tour/tour.module';
 import { DiscountModule } from './modules/discount/discount.module';
-import { CartController } from './modules/cart/cart.controller';
 import { CartModule } from './modules/cart/cart.module';
 import { OrderDetailModule } from './modules/order-detail/order-detail.module';
 import { CtvOrderModule } from './modules/ctv-order/ctv-order.module';
 import { AdminActionModule } from './modules/admin-action/admin-action.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { UserModule } from './modules/user/user.module';
+import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
@@ -27,8 +28,8 @@ import { PaymentModule } from './modules/payment/payment.module';
     CtvOrderModule,
     AdminActionModule,
     PaymentModule,
-  ],
-  controllers: [AppController, CartController],
-  providers: [AppService],
+    UserModule,
+    OrderModule,
+  ]
 })
 export class AppModule {}

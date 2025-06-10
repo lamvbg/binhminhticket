@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,6 +16,10 @@ export class AuthService {
   async register(email: string, name: string, password: string) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hashedPassword =this.hashPassword(password, salt);
+    if (await this.userRepository.findOne({ where: { email } })) {
+      throw new BadRequestException('Email already exists');
+    }
+    
     const user = this.userRepository.create({
       email,
       name,

@@ -1,29 +1,17 @@
-import { PageOptionsDto } from './pageOption';
+import { IsArray } from 'class-validator';
+import { PageMetaDto } from './pageMeta';
 
-export interface PageMetaDtoParameters {
-  pageOptionsDto: PageOptionsDto;
-  itemCount: number;
-}
+export class ResponsePaginate<T> {
+  @IsArray()
+  readonly data: T[];
 
-export class PageMetaDto {
-  readonly page: number;
+  readonly meta: PageMetaDto;
 
-  readonly take: number;
+  readonly message: string;
 
-  readonly itemCount: number;
-
-  readonly pageCount: number;
-
-  readonly hasPreviousPage: boolean;
-
-  readonly hasNextPage: boolean;
-
-  constructor({ pageOptionsDto, itemCount }: PageMetaDtoParameters) {
-    this.page = pageOptionsDto.page;
-    this.take = pageOptionsDto.take;
-    this.itemCount = itemCount;
-    this.pageCount = Math.ceil(this.itemCount / this.take);
-    this.hasPreviousPage = this.page > 1;
-    this.hasNextPage = this.page < this.pageCount;
+  constructor(data: T[], meta: PageMetaDto, message: string) {
+    this.data = data;
+    this.meta = meta;
+    this.message = message;
   }
 }
