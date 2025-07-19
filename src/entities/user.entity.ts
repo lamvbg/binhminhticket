@@ -35,6 +35,12 @@ export class User extends AbstractEntity {
   })
   role: RoleEnum;
 
+  @Column({ nullable: true })
+  phone: string;
+
+  @Column({ nullable: true })
+  address: string;
+
   @OneToMany(() => Discount, discount => discount.user)
   discounts: Discount[];
 
