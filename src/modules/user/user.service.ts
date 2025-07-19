@@ -82,6 +82,8 @@ export class UserService {
       user.email = updateUserDto.email;
       user.password = updateUserDto.password;
       user.role = updateUserDto.role;
+      user.phone = updateUserDto.phone;
+      user.address = updateUserDto.address;
       if (updateUserDto.discount_code) {
         const discount = await this.discountRepository.findOneBy({
           code: updateUserDto.discount_code,
