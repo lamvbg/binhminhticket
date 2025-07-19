@@ -8,6 +8,8 @@ import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/reponsePaginate';
 import { UpdateUserDto } from './dto/update_user.dto';
 import { Discount } from 'src/entities/discount.entity';
+import * as crypto from 'crypto';
+
 
 @Injectable()
 export class UserService {
@@ -19,11 +21,27 @@ export class UserService {
     private readonly discountRepository: Repository<Discount>,
   ) {}
 
+
+    hashPassword(password: string, salt: string): string {
+      if (!password || !salt) {
+        throw new Error('Password and salt are required for hashing');
+      }
+      const hash = crypto
+        .pbkdf2Sync(password, salt, 10000, 64, 'sha512')
+        .toString('hex');
+      return `${hash}.${salt}`;
+    }
+
   async create(createUserDto: CreateUserDto) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = this.hashPassword(createUserDto.password, salt);
     if (await this.userRepository.findOneBy({ email: createUserDto.email })) {
       throw new BadRequestException('Email already exists');
     }
-    const user = new User(createUserDto);
+    const user = this.userRepository.create({
+      ...createUserDto,
+      password: hashedPassword,
+    })
     await this.entityManager.save(user);
     return { user, message: 'User created successfully' };
   }
@@ -77,10 +95,12 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = this.hashPassword(updateUserDto.password, salt);
     if (user) {
       user.name = updateUserDto.name;
       user.email = updateUserDto.email;
-      user.password = updateUserDto.password;
+      user.password = hashedPassword;
       user.role = updateUserDto.role;
       user.phone = updateUserDto.phone;
       user.address = updateUserDto.address;
