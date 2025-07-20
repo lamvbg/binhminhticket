@@ -1,7 +1,15 @@
 import { AbstractEntity } from 'src/common/entities';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { OrderDetail } from './order_detail.entity';
 import { Cart } from './cart.entity';
+import { Discount } from './discount.entity';
 
 @Entity()
 export class Tour extends AbstractEntity {
@@ -20,6 +28,9 @@ export class Tour extends AbstractEntity {
   @Column({ nullable: true })
   duration: number;
 
+  @Column({ type: 'text', array: true, nullable: true })
+  images: string[];
+
   @Column({
     type: 'timestamp',
     nullable: true,
@@ -36,6 +47,9 @@ export class Tour extends AbstractEntity {
 
   @Column({ nullable: true })
   available_seats: number;
+
+  @Column({ nullable: true })
+  sale_percentage: number;
 
   @OneToMany(() => OrderDetail, (detail) => detail.tour)
   orderDetails: OrderDetail[];

@@ -1,9 +1,18 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { User } from "./user.entity";
-import { AbstractEntity } from "src/common/entities";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from './user.entity';
+import { AbstractEntity } from 'src/common/entities';
+import { Tour } from './tour.entity';
 
 @Entity('discounts')
-export class Discount extends AbstractEntity{
+export class Discount extends AbstractEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -15,12 +24,11 @@ export class Discount extends AbstractEntity{
 
   @Column()
   expiry_date: Date;
+  
+  @ManyToMany(() => User, (user) => user.discounts, { cascade: true })
+  users: User[];
 
-  @ManyToOne(() => User, user => user.discounts)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-    constructor(tour: Partial<Discount>) {
+  constructor(tour: Partial<Discount>) {
     super();
     Object.assign(this, tour);
   }

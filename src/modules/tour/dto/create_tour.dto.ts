@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTourDto {
   @ApiProperty({ example: 'Amazing Thailand Tour' })
@@ -21,4 +21,7 @@ export class CreateTourDto {
 
   @ApiProperty({ example: 10 })
   duration: number;
+
+  @ApiPropertyOptional({ example: 5 })
+  sale_percentage?: number;
 }

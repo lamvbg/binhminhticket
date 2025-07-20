@@ -21,4 +21,7 @@ export class UpdateTourDto {
 
   @ApiPropertyOptional({ example: 10 })
   duration?: number;
+
+  @ApiPropertyOptional({ example: 5 })
+  sale_percentage?: number;
 }

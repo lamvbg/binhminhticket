@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/user.entity';
 import { EntityManager, Repository } from 'typeorm';
@@ -10,7 +14,6 @@ import { UpdateUserDto } from './dto/update_user.dto';
 import { Discount } from 'src/entities/discount.entity';
 import * as crypto from 'crypto';
 
-
 @Injectable()
 export class UserService {
   constructor(
@@ -21,16 +24,15 @@ export class UserService {
     private readonly discountRepository: Repository<Discount>,
   ) {}
 
-
-    hashPassword(password: string, salt: string): string {
-      if (!password || !salt) {
-        throw new Error('Password and salt are required for hashing');
-      }
-      const hash = crypto
-        .pbkdf2Sync(password, salt, 10000, 64, 'sha512')
-        .toString('hex');
-      return `${hash}.${salt}`;
+  hashPassword(password: string, salt: string): string {
+    if (!password || !salt) {
+      throw new Error('Password and salt are required for hashing');
     }
+    const hash = crypto
+      .pbkdf2Sync(password, salt, 10000, 64, 'sha512')
+      .toString('hex');
+    return `${hash}.${salt}`;
+  }
 
   async create(createUserDto: CreateUserDto) {
     const salt = crypto.randomBytes(16).toString('hex');
@@ -41,7 +43,22 @@ export class UserService {
     const user = this.userRepository.create({
       ...createUserDto,
       password: hashedPassword,
-    })
+    });
+    if (createUserDto.discount_code) {
+      const discount = await this.discountRepository.findOne({
+        where: { code: createUserDto.discount_code },
+        relations: ['users'],
+      });
+
+      if (!discount) {
+        throw new BadRequestException('Discount code not found');
+      }
+      const alreadyLinked = discount.users?.some((u) => u.id === user.id);
+      if (!alreadyLinked) {
+        discount.users.push(user);
+        await this.entityManager.save(discount);
+      }
+    }
     await this.entityManager.save(user);
     return { user, message: 'User created successfully' };
   }
@@ -49,7 +66,7 @@ export class UserService {
   async getAll(params: GetUserDto) {
     const users = this.userRepository
       .createQueryBuilder('user')
-      .select(['user'])
+      .leftJoinAndSelect('user.discounts', 'discount')
       .skip(params.skip)
       .take(params.take)
       .orderBy('user.createdAt', 'DESC');
@@ -81,7 +98,7 @@ export class UserService {
   async get(id: string) {
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .select(['user'])
+      .leftJoinAndSelect('user.discounts', 'discount')
       .where('user.id = :id', { id })
       .getOne();
     if (!user) {
@@ -95,15 +112,33 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = this.hashPassword(updateUserDto.password, salt);
     if (user) {
-      user.name = updateUserDto.name;
-      user.email = updateUserDto.email;
-      user.password = hashedPassword;
-      user.role = updateUserDto.role;
-      user.phone = updateUserDto.phone;
-      user.address = updateUserDto.address;
+      if (updateUserDto.email) {
+        if (
+          await this.userRepository.findOneBy({ email: updateUserDto.email })
+        ) {
+          throw new BadRequestException('Email already exists');
+        } else {
+          user.email = updateUserDto.email;
+        }
+      }
+      if (updateUserDto.name) {
+        user.name = updateUserDto.name;
+      }
+      if (updateUserDto.password) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hashedPassword = this.hashPassword(updateUserDto.password, salt);
+        user.password = hashedPassword;
+      }
+      if (updateUserDto.role) {
+        user.role = updateUserDto.role;
+      }
+      if (updateUserDto.phone) {
+        user.phone = updateUserDto.phone;
+      }
+      if (updateUserDto.address) {
+        user.address = updateUserDto.address;
+      }
       if (updateUserDto.discount_code) {
         const discount = await this.discountRepository.findOneBy({
           code: updateUserDto.discount_code,
@@ -113,10 +148,10 @@ export class UserService {
           throw new NotFoundException('Discount not found');
         }
 
-        if (discount) {
-          discount.user = user;
-          await this.discountRepository.save(discount);
-        }
+        user.discounts = [];
+        user.discounts = [discount];
+      } else {
+        user.discounts = [];
       }
       await this.entityManager.save(user);
       return { user, message: 'User updated successfully' };
@@ -128,9 +163,14 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    if (user) {
-      await this.entityManager.remove(user);
-      return { message: 'User deleted successfully' };
+
+    if (user.discounts?.length > 0) {
+      for (const discount of user.discounts) {
+        discount.users = discount.users?.filter((u) => u.id !== user.id);
+        await this.entityManager.save(discount);
+      }
     }
+    await this.entityManager.remove(user);
+    return { message: 'User deleted successfully' };
   }
 }

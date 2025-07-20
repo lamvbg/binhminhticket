@@ -7,6 +7,8 @@ import {
   OneToOne,
   JoinColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Cart } from './cart.entity';
 import { Order } from './order.entity';
@@ -41,16 +43,17 @@ export class User extends AbstractEntity {
   @Column({ nullable: true })
   address: string;
 
-  @OneToMany(() => Discount, discount => discount.user)
+  @ManyToMany(() => Discount, (discount) => discount.users)
+  @JoinTable()
   discounts: Discount[];
 
-  @OneToMany(() => Order, order => order.user)
+  @OneToMany(() => Order, (order) => order.user)
   orders: Order[];
 
-  @OneToMany(() => Cart, cart => cart.user)
+  @OneToMany(() => Cart, (cart) => cart.user)
   cartItems: Cart[];
 
-  @OneToMany(() => AdminAction, action => action.admin)
+  @OneToMany(() => AdminAction, (action) => action.admin)
   adminActions: AdminAction[];
 
   constructor(tour: Partial<User>) {
