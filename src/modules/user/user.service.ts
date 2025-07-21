@@ -13,6 +13,8 @@ import { ResponsePaginate } from 'src/common/dtos/reponsePaginate';
 import { UpdateUserDto } from './dto/update_user.dto';
 import { Discount } from 'src/entities/discount.entity';
 import * as crypto from 'crypto';
+import { Tour } from 'src/entities/tour.entity';
+import { GetFavouriteDto } from './dto/get_user_favourite_tour.dto';
 
 @Injectable()
 export class UserService {
@@ -22,6 +24,8 @@ export class UserService {
     private readonly entityManager: EntityManager,
     @InjectRepository(Discount)
     private readonly discountRepository: Repository<Discount>,
+    @InjectRepository(Tour)
+    private readonly tourRepository: Repository<Tour>,
   ) {}
 
   hashPassword(password: string, salt: string): string {
@@ -172,5 +176,84 @@ export class UserService {
     }
     await this.entityManager.remove(user);
     return { message: 'User deleted successfully' };
+  }
+
+  async addFavouriteTour(userId: string, tourId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favouriteTours'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const tour = await this.tourRepository.findOneBy({ id: tourId });
+
+    if (!tour) {
+      throw new NotFoundException('Tour not found');
+    }
+
+    const alreadyExists = user.favouriteTours?.some((t) => t.id === tour.id);
+
+    if (alreadyExists) {
+      throw new BadRequestException('Tour already in favourites');
+    }
+
+    user.favouriteTours = [...(user.favouriteTours || []), tour];
+    await this.userRepository.save(user);
+
+    return { message: 'Tour added to favourites successfully' };
+  }
+
+  async removeFavouriteTour(userId: string, tourId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favouriteTours'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.favouriteTours = user.favouriteTours?.filter((t) => t.id !== tourId);
+    await this.userRepository.save(user);
+
+    return { message: 'Tour removed from favourites successfully' };
+  }
+
+  async getFavouriteTours(params: GetFavouriteDto) {
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.favouriteTours', 'favouriteTours')
+      .where('user.id = :userId', { userId: params.userId });
+
+    const [user] = await query.getMany();
+
+    if (!user) {
+      throw new NotFoundException('User not found or has no favourites');
+    }
+
+    const allFavourites = user.favouriteTours;
+
+    const skip = params.skip ?? 0;
+    const take = params.take ?? allFavourites.length;
+    const paginated = allFavourites.slice(skip, skip + take);
+
+    const pageMetaDto = new PageMetaDto({
+      itemCount: allFavourites.length,
+      pageOptionsDto: params,
+    });
+
+    return new ResponsePaginate(
+      [
+        {
+          user_id: user.id,
+          favourites: paginated,
+        },
+      ],
+      pageMetaDto,
+      'Success',
+    );
   }
 }

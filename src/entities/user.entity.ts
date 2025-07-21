@@ -14,6 +14,7 @@ import { Cart } from './cart.entity';
 import { Order } from './order.entity';
 import { Discount } from './discount.entity';
 import { AdminAction } from './admin_action.entity';
+import { Tour } from './tour.entity';
 
 @Entity('users')
 export class User extends AbstractEntity {
@@ -55,6 +56,10 @@ export class User extends AbstractEntity {
 
   @OneToMany(() => AdminAction, (action) => action.admin)
   adminActions: AdminAction[];
+
+  @ManyToMany(() => Tour)
+  @JoinTable()
+  favouriteTours: Tour[];
 
   constructor(tour: Partial<User>) {
     super();
